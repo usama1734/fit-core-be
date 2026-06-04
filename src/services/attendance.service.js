@@ -8,14 +8,30 @@ const attendanceInclude = {
   member: { include: memberInclude },
 };
 
-function resolveMemberId(dto, actor) {
+async function resolveCheckInMemberId(dto, actor) {
+  if (dto.venueToken) {
+    if (actor.role !== 'MEMBER') {
+      throw new AppError('Gym QR check-in is for members only', 403, 'FORBIDDEN');
+    }
+    await assertValidVenueToken(dto.venueToken);
+    return actor.memberId;
+  }
+
   if (actor.role === 'MEMBER') {
     return actor.memberId;
   }
-  if (!dto.memberId) {
-    throw new AppError('memberId is required', 400, 'VALIDATION_ERROR');
+
+  if (dto.qrToken) {
+    const byQr = await prisma.member.findUnique({ where: { qrToken: dto.qrToken.trim() } });
+    if (!byQr) throw new AppError('Invalid QR token', 400, 'INVALID_QR');
+    return byQr.id;
   }
-  return dto.memberId;
+
+  if (dto.memberId) {
+    return dto.memberId;
+  }
+
+  throw new AppError('memberId or qrToken is required', 400, 'VALIDATION_ERROR');
 }
 
 async function assertMemberAccess(memberId, actor) {
@@ -38,23 +54,7 @@ function isMembershipActive(member) {
 }
 
 export async function checkIn(dto, actor) {
-  if (dto.venueToken) {
-    if (actor.role !== 'MEMBER') {
-      throw new AppError('Gym QR check-in is for members only', 403, 'FORBIDDEN');
-    }
-    await assertValidVenueToken(dto.venueToken);
-  }
-
-  let memberId = resolveMemberId(dto, actor);
-
-  if (dto.qrToken && actor.role !== 'MEMBER') {
-    const byQr = await prisma.member.findUnique({ where: { qrToken: dto.qrToken } });
-    if (!byQr) throw new AppError('Invalid QR token', 400, 'INVALID_QR');
-    memberId = byQr.id;
-  } else if (dto.qrToken && actor.role === 'MEMBER') {
-    memberId = actor.memberId;
-  }
-
+  const memberId = await resolveCheckInMemberId(dto, actor);
   const member = await assertMemberAccess(memberId, actor);
 
   if (member.paymentStatus !== 'PAID') {
