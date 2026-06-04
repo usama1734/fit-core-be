@@ -33,7 +33,7 @@ export async function getConfig() {
 export async function getGymQrPayload() {
   const config = await ensureConfig();
   const url = buildCheckInUrl(config.token);
-  const qrCodeDataUrl = await QRCode.toDataURL(url, {
+  const qrCodeDataUrl = await QRCode.toDataURL(config.token, {
     errorCorrectionLevel: 'M',
     margin: 2,
     width: 320,
@@ -49,7 +49,7 @@ export async function regenerateGymToken() {
     update: { token },
   });
   const url = buildCheckInUrl(token);
-  const qrCodeDataUrl = await QRCode.toDataURL(url, {
+  const qrCodeDataUrl = await QRCode.toDataURL(token, {
     errorCorrectionLevel: 'M',
     margin: 2,
     width: 320,
