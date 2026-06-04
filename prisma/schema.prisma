@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TRAINER
+  MEMBER
+}
+
+enum AttendanceMethod {
+  MANUAL
+  QR
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  trainer Trainer?
+  member  Member?
+}
+
+model Trainer {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  specialty String?
+  bio       String?
+  members   Member[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Member {
+  id               String          @id @default(cuid())
+  userId           String          @unique
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainerId        String?
+  trainer          Trainer?        @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  membershipPlanId String?
+  membershipPlan   MembershipPlan? @relation(fields: [membershipPlanId], references: [id], onDelete: SetNull)
+  phone            String?
+  dateOfBirth      DateTime?
+  qrToken          String?         @unique
+  membershipStart  DateTime?
+  membershipEnd    DateTime?
+  attendances      Attendance[]
+  payments         Payment[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([trainerId])
+  @@index([membershipPlanId])
+}
+
+model MembershipPlan {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  description   String?
+  price         Decimal   @db.Decimal(10, 2)
+  durationDays  Int
+  features      String[]  @default([])
+  isActive      Boolean   @default(true)
+  stripePriceId String?
+  members       Member[]
+  payments      Payment[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Attendance {
+  id         String           @id @default(cuid())
+  memberId   String
+  member     Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  checkInAt  DateTime         @default(now())
+  checkOutAt DateTime?
+  method     AttendanceMethod @default(MANUAL)
+  notes      String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([memberId])
+  @@index([checkInAt])
+}
+
+model Payment {
+  id                    String         @id @default(cuid())
+  memberId              String
+  member                Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  planId                String?
+  membershipPlan        MembershipPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  amount                Decimal        @db.Decimal(10, 2)
+  currency              String         @default("usd")
+  status                PaymentStatus  @default(PENDING)
+  stripeSessionId       String?        @unique
+  stripePaymentIntentId String?
+  paidAt                DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+}

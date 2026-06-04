@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Vite
+frontend/dist/
+
+# Test / coverage
+coverage/
