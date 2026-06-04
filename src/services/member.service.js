@@ -119,11 +119,27 @@ export async function getMemberById(id, actor) {
   return member;
 }
 
+async function ensureMemberQrToken(memberId) {
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    include: memberInclude,
+  });
+  if (!member) throw new AppError('Member not found', 404, 'NOT_FOUND');
+  if (member.qrToken) return member;
+
+  const qrToken = await generateQrToken(memberId);
+  return prisma.member.update({
+    where: { id: memberId },
+    data: { qrToken },
+    include: memberInclude,
+  });
+}
+
 export async function getOwnProfile(actor) {
   if (!actor.memberId) {
     throw new AppError('Member profile not found', 404, 'NOT_FOUND');
   }
-  return getMemberById(actor.memberId, actor);
+  return ensureMemberQrToken(actor.memberId);
 }
 
 export async function updateMember(id, dto, actor) {

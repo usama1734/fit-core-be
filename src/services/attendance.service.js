@@ -3,6 +3,7 @@ import { AppError } from '../utils/AppError.js';
 import { paginatedFindMany } from '../utils/pagination.js';
 import { memberInclude } from '../utils/userSelect.js';
 import { assertValidVenueToken } from './gymCheckIn.service.js';
+import { normalizeMemberQrScan } from '../utils/qrScan.js';
 
 const attendanceInclude = {
   member: { include: memberInclude },
@@ -22,7 +23,8 @@ async function resolveCheckInMemberId(dto, actor) {
   }
 
   if (dto.qrToken) {
-    const byQr = await prisma.member.findUnique({ where: { qrToken: dto.qrToken.trim() } });
+    const token = normalizeMemberQrScan(dto.qrToken);
+    const byQr = await prisma.member.findUnique({ where: { qrToken: token } });
     if (!byQr) throw new AppError('Invalid QR token', 400, 'INVALID_QR');
     return byQr.id;
   }
