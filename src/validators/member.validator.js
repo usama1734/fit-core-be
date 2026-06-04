@@ -1,14 +1,22 @@
 import { z } from 'zod';
 
+const optionalId = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim() ? v.trim() : undefined));
+
 export const createMemberSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
   dateOfBirth: z.string().datetime().optional(),
-  trainerId: z.string().optional(),
-  membershipPlanId: z.string().optional(),
+  trainerId: optionalId,
+  membershipPlanId: optionalId,
 });
 
 export const updateMemberSchema = z.object({

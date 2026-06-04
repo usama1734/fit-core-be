@@ -17,42 +17,54 @@ function applyMembershipDates(plan) {
   return { membershipStart: start, membershipEnd: end };
 }
 
-export async function createMember(dto) {
+export async function createMember(dto, actor = null) {
+  const payload = { ...dto };
+
+  if (actor?.role === 'TRAINER') {
+    if (!actor.trainerId) {
+      throw new AppError('Trainer profile not found', 403, 'FORBIDDEN');
+    }
+    payload.trainerId = actor.trainerId;
+  }
+
+  if (!payload.trainerId) delete payload.trainerId;
+  if (!payload.membershipPlanId) delete payload.membershipPlanId;
+
   const existing = await prisma.user.findUnique({
-    where: { email: dto.email.toLowerCase() },
+    where: { email: payload.email.toLowerCase() },
   });
   if (existing) {
     throw new AppError('Email already registered', 409, 'DUPLICATE_EMAIL');
   }
 
-  if (dto.trainerId) {
-    const trainer = await prisma.trainer.findUnique({ where: { id: dto.trainerId } });
+  if (payload.trainerId) {
+    const trainer = await prisma.trainer.findUnique({ where: { id: payload.trainerId } });
     if (!trainer) throw new AppError('Trainer not found', 404, 'NOT_FOUND');
   }
 
   let plan = null;
   let membershipDates = {};
-  if (dto.membershipPlanId) {
-    plan = await prisma.membershipPlan.findUnique({ where: { id: dto.membershipPlanId } });
+  if (payload.membershipPlanId) {
+    plan = await prisma.membershipPlan.findUnique({ where: { id: payload.membershipPlanId } });
     if (!plan) throw new AppError('Membership plan not found', 404, 'NOT_FOUND');
     membershipDates = applyMembershipDates(plan);
   }
 
-  const passwordHash = await hashPassword(dto.password);
+  const passwordHash = await hashPassword(payload.password);
 
   const member = await prisma.member.create({
     data: {
-      phone: dto.phone,
-      dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
-      trainerId: dto.trainerId,
-      membershipPlanId: dto.membershipPlanId,
+      phone: payload.phone,
+      dateOfBirth: payload.dateOfBirth ? new Date(payload.dateOfBirth) : undefined,
+      trainerId: payload.trainerId,
+      membershipPlanId: payload.membershipPlanId,
       ...membershipDates,
       user: {
         create: {
-          email: dto.email.toLowerCase(),
+          email: payload.email.toLowerCase(),
           passwordHash,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
           role: 'MEMBER',
         },
       },

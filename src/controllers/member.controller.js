@@ -3,7 +3,7 @@ import { successResponse } from '../utils/apiResponse.js';
 import { auditLog } from '../middleware/auditLogger.middleware.js';
 
 export async function create(req, res) {
-  const member = await memberService.createMember(req.body);
+  const member = await memberService.createMember(req.body, req.user);
   auditLog({ action: 'MEMBER_CREATED', actorId: req.user.id, resource: `member:${member.id}` });
   res.status(201).json(successResponse(member, 'Member created'));
 }

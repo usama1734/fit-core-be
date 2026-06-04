@@ -17,7 +17,12 @@ router.use(authenticate);
 
 router.get('/me', requireRole(ROLES.MEMBER), asyncHandler(memberController.getMe));
 
-router.post('/', requireRole(ROLES.ADMIN), validate(createMemberSchema), asyncHandler(memberController.create));
+router.post(
+  '/',
+  requireRole(ROLES.ADMIN, ROLES.TRAINER),
+  validate(createMemberSchema),
+  asyncHandler(memberController.create),
+);
 router.get('/', requireRole(ROLES.ADMIN, ROLES.TRAINER), asyncHandler(memberController.list));
 router.get('/:id', requireRole(ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER), asyncHandler(memberController.getById));
 router.patch('/:id', requireRole(ROLES.ADMIN), validate(updateMemberSchema), asyncHandler(memberController.update));
