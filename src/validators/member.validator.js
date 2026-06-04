@@ -27,6 +27,12 @@ export const updateMemberSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+export const updateOwnProfileSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  phone: z.string().optional().nullable(),
+});
+
 export const assignTrainerSchema = z.object({
   trainerId: z.string().min(1),
 });

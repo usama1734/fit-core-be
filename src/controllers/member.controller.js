@@ -23,6 +23,11 @@ export async function getMe(req, res) {
   res.json(successResponse(member));
 }
 
+export async function updateMe(req, res) {
+  const member = await memberService.updateOwnProfile(req.user, req.body);
+  res.json(successResponse(member, 'Profile updated'));
+}
+
 export async function update(req, res) {
   const member = await memberService.updateMember(req.params.id, req.body, req.user);
   auditLog({ action: 'MEMBER_UPDATED', actorId: req.user.id, resource: `member:${member.id}` });

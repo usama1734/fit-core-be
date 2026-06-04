@@ -108,6 +108,27 @@ export async function getOwnProfile(actor) {
   return getMemberById(actor.memberId, actor);
 }
 
+export async function updateOwnProfile(actor, dto) {
+  if (!actor.memberId) {
+    throw new AppError('Member profile not found', 404, 'NOT_FOUND');
+  }
+  const member = await prisma.member.findUnique({ where: { id: actor.memberId } });
+  if (!member) throw new AppError('Member not found', 404, 'NOT_FOUND');
+
+  const userData = {};
+  if (dto.firstName) userData.firstName = dto.firstName;
+  if (dto.lastName) userData.lastName = dto.lastName;
+
+  return prisma.member.update({
+    where: { id: actor.memberId },
+    data: {
+      phone: dto.phone !== undefined ? dto.phone : undefined,
+      ...(Object.keys(userData).length && { user: { update: userData } }),
+    },
+    include: memberInclude,
+  });
+}
+
 export async function updateMember(id, dto, actor) {
   if (actor.role !== 'ADMIN') {
     throw new AppError('Only admins can update members', 403, 'FORBIDDEN');

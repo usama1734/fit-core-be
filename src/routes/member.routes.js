@@ -7,6 +7,7 @@ import { validate } from '#middleware/validate.middleware.js';
 import {
   createMemberSchema,
   updateMemberSchema,
+  updateOwnProfileSchema,
   assignTrainerSchema,
   assignPlanSchema,
 } from '#validators/member.validator.js';
@@ -17,6 +18,12 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/me', requireRole(ROLES.MEMBER), asyncHandler(memberController.getMe));
+router.patch(
+  '/me',
+  requireRole(ROLES.MEMBER),
+  validate(updateOwnProfileSchema),
+  asyncHandler(memberController.updateMe),
+);
 
 router.post(
   '/',
