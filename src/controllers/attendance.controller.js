@@ -6,7 +6,6 @@ import { auditLog } from '../middleware/auditLogger.middleware.js';
 
 const CHECKIN_FAILURE_CODES = new Set([
   'INVALID_VENUE_QR',
-  'INVALID_QR',
   'PAYMENT_REQUIRED',
   'MEMBERSHIP_EXPIRED',
   'ALREADY_CHECKED_IN',

@@ -3,37 +3,20 @@ import { AppError } from '../utils/AppError.js';
 import { paginatedFindMany } from '../utils/pagination.js';
 import { memberInclude } from '../utils/userSelect.js';
 import { assertValidVenueToken } from './gymCheckIn.service.js';
-import { normalizeMemberQrScan } from '../utils/qrScan.js';
 
 const attendanceInclude = {
   member: { include: memberInclude },
 };
 
 async function resolveCheckInMemberId(dto, actor) {
-  if (dto.venueToken) {
-    if (actor.role !== 'MEMBER') {
-      throw new AppError('Gym QR check-in is for members only', 403, 'FORBIDDEN');
-    }
-    await assertValidVenueToken(dto.venueToken);
-    return actor.memberId;
+  if (actor.role !== 'MEMBER') {
+    throw new AppError('Only members can check in by scanning the gym QR', 403, 'FORBIDDEN');
   }
-
-  if (actor.role === 'MEMBER') {
-    return actor.memberId;
+  if (!dto.venueToken?.trim()) {
+    throw new AppError('venueToken is required', 400, 'VALIDATION_ERROR');
   }
-
-  if (dto.qrToken) {
-    const token = normalizeMemberQrScan(dto.qrToken);
-    const byQr = await prisma.member.findUnique({ where: { qrToken: token } });
-    if (!byQr) throw new AppError('Invalid QR token', 400, 'INVALID_QR');
-    return byQr.id;
-  }
-
-  if (dto.memberId) {
-    return dto.memberId;
-  }
-
-  throw new AppError('memberId or qrToken is required', 400, 'VALIDATION_ERROR');
+  await assertValidVenueToken(dto.venueToken);
+  return actor.memberId;
 }
 
 async function assertMemberAccess(memberId, actor) {
@@ -74,12 +57,10 @@ export async function checkIn(dto, actor) {
     throw new AppError('Member already checked in', 409, 'ALREADY_CHECKED_IN');
   }
 
-  const method = dto.method ?? (dto.venueToken || dto.qrToken ? 'QR' : 'MANUAL');
-
   return prisma.attendance.create({
     data: {
       memberId,
-      method,
+      method: 'QR',
       notes: dto.notes,
     },
     include: attendanceInclude,

@@ -43,11 +43,6 @@ export async function assignPlan(req, res) {
   res.json(successResponse(member, 'Plan assigned'));
 }
 
-export async function regenerateQr(req, res) {
-  const result = await memberService.regenerateQr(req.params.id, req.user);
-  res.json(successResponse(result, 'QR code regenerated'));
-}
-
 export async function remove(req, res) {
   const result = await memberService.deleteMember(req.params.id);
   res.json(successResponse(result, 'Member deactivated'));

@@ -53,11 +53,6 @@ router.patch(
   validate(assignPlanSchema),
   asyncHandler(memberController.assignPlan),
 );
-router.post(
-  '/:id/qr',
-  requireRole(ROLES.ADMIN, ROLES.MEMBER),
-  asyncHandler(memberController.regenerateQr),
-);
 router.delete('/:id', requireRole(ROLES.ADMIN), asyncHandler(memberController.remove));
 
 export default router;

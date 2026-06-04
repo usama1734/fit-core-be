@@ -109,7 +109,6 @@ async function main() {
         membershipStart: start,
         membershipEnd: end,
         paymentStatus: 'PAID',
-        qrToken: `FC-SEED-MEMBER-${i}-${Date.now()}`,
         user: {
           create: {
             email: `member${i}@gmail.com`,

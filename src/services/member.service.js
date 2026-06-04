@@ -1,15 +1,8 @@
-import { randomUUID } from 'crypto';
-import QRCode from 'qrcode';
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword } from '../utils/password.js';
 import { paginatedFindMany } from '../utils/pagination.js';
 import { memberInclude } from '../utils/userSelect.js';
-
-async function generateQrToken(memberId) {
-  const token = `FC-${memberId}-${randomUUID()}`;
-  return token;
-}
 
 function applyMembershipDates(plan) {
   const start = new Date();
@@ -53,7 +46,7 @@ export async function createMember(dto, actor = null) {
 
   const passwordHash = await hashPassword(payload.password);
 
-  const member = await prisma.member.create({
+  return prisma.member.create({
     data: {
       phone: payload.phone,
       dateOfBirth: payload.dateOfBirth ? new Date(payload.dateOfBirth) : undefined,
@@ -72,17 +65,6 @@ export async function createMember(dto, actor = null) {
     },
     include: memberInclude,
   });
-
-  const qrToken = await generateQrToken(member.id);
-  const qrCodeDataUrl = await QRCode.toDataURL(qrToken);
-
-  const updated = await prisma.member.update({
-    where: { id: member.id },
-    data: { qrToken },
-    include: memberInclude,
-  });
-
-  return { ...updated, qrCodeDataUrl };
 }
 
 export async function listMembers(actor, query = {}) {
@@ -119,27 +101,11 @@ export async function getMemberById(id, actor) {
   return member;
 }
 
-async function ensureMemberQrToken(memberId) {
-  const member = await prisma.member.findUnique({
-    where: { id: memberId },
-    include: memberInclude,
-  });
-  if (!member) throw new AppError('Member not found', 404, 'NOT_FOUND');
-  if (member.qrToken) return member;
-
-  const qrToken = await generateQrToken(memberId);
-  return prisma.member.update({
-    where: { id: memberId },
-    data: { qrToken },
-    include: memberInclude,
-  });
-}
-
 export async function getOwnProfile(actor) {
   if (!actor.memberId) {
     throw new AppError('Member profile not found', 404, 'NOT_FOUND');
   }
-  return ensureMemberQrToken(actor.memberId);
+  return getMemberById(actor.memberId, actor);
 }
 
 export async function updateMember(id, dto, actor) {
@@ -208,26 +174,6 @@ export async function assignPlan(memberId, membershipPlanId, membershipStart) {
     },
     include: memberInclude,
   });
-}
-
-export async function regenerateQr(memberId, actor) {
-  if (actor.role === 'MEMBER' && actor.memberId !== memberId) {
-    throw new AppError('Forbidden', 403, 'FORBIDDEN');
-  }
-
-  const member = await prisma.member.findUnique({ where: { id: memberId } });
-  if (!member) throw new AppError('Member not found', 404, 'NOT_FOUND');
-
-  const qrToken = await generateQrToken(memberId);
-  const qrCodeDataUrl = await QRCode.toDataURL(qrToken);
-
-  const updated = await prisma.member.update({
-    where: { id: memberId },
-    data: { qrToken },
-    include: memberInclude,
-  });
-
-  return { ...updated, qrCodeDataUrl };
 }
 
 export async function deleteMember(id) {
