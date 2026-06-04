@@ -65,12 +65,71 @@ function wrapStripeError(err) {
   throw err;
 }
 
+async function syncPendingPaymentWithStripe(payment) {
+  if (!payment.stripeSessionId || payment.status !== 'PENDING') {
+    return payment;
+  }
+
+  const stripeClient = getStripe();
+  let session;
+  try {
+    session = await stripeClient.checkout.sessions.retrieve(payment.stripeSessionId);
+  } catch {
+    return payment;
+  }
+
+  if (session.payment_status === 'paid') {
+    const { payment: fulfilled } = await fulfillPaymentRecord(payment.id, {
+      stripePaymentIntentId:
+        typeof session.payment_intent === 'string' ? session.payment_intent : null,
+      planIdOverride: session.metadata?.planId || undefined,
+    });
+    return fulfilled;
+  }
+
+  if (session.status === 'expired') {
+    return prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED' },
+      include: paymentInclude,
+    });
+  }
+
+  const ageMs = Date.now() - new Date(payment.createdAt).getTime();
+  const isStaleOpen =
+    session.status === 'open' &&
+    session.payment_status !== 'paid' &&
+    ageMs > 60 * 60 * 1000;
+
+  if (isStaleOpen) {
+    return prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED' },
+      include: paymentInclude,
+    });
+  }
+
+  return payment;
+}
+
+export async function syncMemberPendingPayments(memberId) {
+  const pending = await prisma.payment.findMany({
+    where: { memberId, status: 'PENDING', stripeSessionId: { not: null } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  for (const payment of pending) {
+    await syncPendingPaymentWithStripe(payment);
+  }
+}
+
 export async function listPayments(actor) {
   const where = {};
   if (actor.role === 'MEMBER') {
     where.memberId = actor.memberId;
-  } else if (actor.role === 'TRAINER') {
-    where.member = { trainerId: actor.trainerId };
+    await syncMemberPendingPayments(actor.memberId);
+  } else if (actor.role !== 'ADMIN') {
+    throw new AppError('Forbidden', 403, 'FORBIDDEN');
   }
 
   return prisma.payment.findMany({
@@ -98,12 +157,11 @@ export async function getPaymentById(id, actor) {
 }
 
 export async function createCheckoutSession(dto, actor) {
-  const memberId =
-    actor.role === 'ADMIN' && dto.memberId ? dto.memberId : actor.memberId;
-
-  if (!memberId) {
-    throw new AppError('Member profile required', 400, 'VALIDATION_ERROR');
+  if (actor.role !== 'MEMBER' || !actor.memberId) {
+    throw new AppError('Only members can purchase membership plans', 403, 'FORBIDDEN');
   }
+
+  const memberId = actor.memberId;
 
   const [member, plan] = await Promise.all([
     prisma.member.findUnique({ where: { id: memberId }, include: { user: true } }),
@@ -113,11 +171,51 @@ export async function createCheckoutSession(dto, actor) {
   if (!member) throw new AppError('Member not found', 404, 'NOT_FOUND');
   if (!plan || !plan.isActive) throw new AppError('Plan not found', 404, 'NOT_FOUND');
 
-  if (actor.role === 'MEMBER' && actor.memberId !== memberId) {
-    throw new AppError('Forbidden', 403, 'FORBIDDEN');
-  }
-
   const amount = Number(plan.price);
+  const stripeClient = getStripe();
+
+  const recentPending = await prisma.payment.findFirst({
+    where: {
+      memberId,
+      planId: plan.id,
+      status: 'PENDING',
+      stripeSessionId: { not: null },
+      createdAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (recentPending?.stripeSessionId) {
+    try {
+      const existingSession = await stripeClient.checkout.sessions.retrieve(
+        recentPending.stripeSessionId,
+      );
+      if (existingSession.payment_status === 'paid') {
+        await fulfillPaymentRecord(recentPending.id, {
+          planIdOverride: plan.id,
+        });
+        throw new AppError(
+          'This plan is already paid. Refresh your profile to see the update.',
+          409,
+          'ALREADY_PAID',
+        );
+      }
+      if (existingSession.status === 'open' && existingSession.url) {
+        return {
+          sessionId: existingSession.id,
+          url: existingSession.url,
+          paymentId: recentPending.id,
+          reused: true,
+        };
+      }
+      await prisma.payment.update({
+        where: { id: recentPending.id },
+        data: { status: 'FAILED' },
+      });
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+    }
+  }
 
   const payment = await prisma.payment.create({
     data: {
@@ -128,7 +226,6 @@ export async function createCheckoutSession(dto, actor) {
     },
   });
 
-  const stripeClient = getStripe();
   const lineItems = plan.stripePriceId
     ? [{ price: plan.stripePriceId, quantity: 1 }]
     : [
@@ -170,6 +267,143 @@ export async function createCheckoutSession(dto, actor) {
   return { sessionId: session.id, url: session.url, paymentId: payment.id };
 }
 
+async function applyPlanToMember(tx, memberId, planId, { isRenewal = false } = {}) {
+  const [existing, plan] = await Promise.all([
+    tx.member.findUnique({ where: { id: memberId } }),
+    tx.membershipPlan.findUnique({ where: { id: planId } }),
+  ]);
+  if (!plan) return null;
+
+  const now = new Date();
+  const samePlan = existing?.membershipPlanId === plan.id;
+  const start =
+    isRenewal && !samePlan
+      ? now
+      : existing?.membershipEnd && new Date(existing.membershipEnd) > now
+        ? new Date(existing.membershipEnd)
+        : now;
+  const end = new Date(start);
+  end.setDate(end.getDate() + plan.durationDays);
+
+  return tx.member.update({
+    where: { id: memberId },
+    data: {
+      membershipPlanId: plan.id,
+      membershipStart: start,
+      membershipEnd: end,
+      paymentStatus: 'PAID',
+    },
+    include: memberInclude,
+  });
+}
+
+async function fulfillPaymentRecord(
+  paymentId,
+  { stripePaymentIntentId = null, planIdOverride = null } = {},
+) {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) {
+    throw new AppError('Payment not found', 404, 'NOT_FOUND');
+  }
+
+  const targetPlanId = planIdOverride ?? payment.planId;
+
+  if (payment.status === 'COMPLETED') {
+    const completedPayment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: paymentInclude,
+    });
+    let member = await prisma.member.findUnique({
+      where: { id: payment.memberId },
+      include: memberInclude,
+    });
+    if (targetPlanId && member?.membershipPlanId !== targetPlanId) {
+      member = await prisma.$transaction((tx) =>
+        applyPlanToMember(tx, payment.memberId, targetPlanId, { isRenewal: true }),
+      );
+    }
+    return { payment: completedPayment, member, alreadyCompleted: true };
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedPayment = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'COMPLETED',
+        paidAt: new Date(),
+        stripePaymentIntentId,
+        ...(targetPlanId && targetPlanId !== payment.planId && { planId: targetPlanId }),
+      },
+      include: paymentInclude,
+    });
+
+    let updatedMember = null;
+    if (targetPlanId) {
+      const existing = await tx.member.findUnique({ where: { id: payment.memberId } });
+      const isRenewal = Boolean(
+        existing?.membershipPlanId && existing.membershipPlanId !== targetPlanId,
+      );
+      updatedMember = await applyPlanToMember(tx, payment.memberId, targetPlanId, {
+        isRenewal,
+      });
+    }
+
+    return { payment: updatedPayment, member: updatedMember };
+  });
+
+  return { ...result, alreadyCompleted: false };
+}
+
+export async function confirmCheckoutSession(sessionId, actor) {
+  if (!sessionId?.trim()) {
+    throw new AppError('session_id is required', 400, 'VALIDATION_ERROR');
+  }
+
+  const stripeClient = getStripe();
+  let session;
+  try {
+    session = await stripeClient.checkout.sessions.retrieve(sessionId.trim());
+  } catch (err) {
+    wrapStripeError(err);
+  }
+
+  if (session.payment_status !== 'paid') {
+    throw new AppError('Payment has not been completed yet', 400, 'PAYMENT_INCOMPLETE');
+  }
+
+  const paymentId = session.metadata?.paymentId;
+  const metadataPlanId = session.metadata?.planId;
+  if (!paymentId) {
+    throw new AppError('Checkout session is missing payment metadata', 400, 'INVALID_SESSION');
+  }
+
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) {
+    throw new AppError('Payment not found', 404, 'NOT_FOUND');
+  }
+
+  if (actor.role !== 'MEMBER' || payment.memberId !== actor.memberId) {
+    throw new AppError('Forbidden', 403, 'FORBIDDEN');
+  }
+
+  if (payment.stripeSessionId && payment.stripeSessionId !== session.id) {
+    throw new AppError('Session does not match this payment', 400, 'INVALID_SESSION');
+  }
+
+  if (!payment.stripeSessionId) {
+    await prisma.payment.update({
+      where: { id: paymentId },
+      data: { stripeSessionId: session.id },
+    });
+  }
+
+  return fulfillPaymentRecord(paymentId, {
+    stripePaymentIntentId:
+      typeof session.payment_intent === 'string' ? session.payment_intent : null,
+    planIdOverride: metadataPlanId || undefined,
+  });
+}
+
 export async function handleStripeWebhook(rawBody, signature) {
   const stripeClient = getStripe();
   if (!env.STRIPE_WEBHOOK_SECRET) {
@@ -191,38 +425,10 @@ export async function handleStripeWebhook(rawBody, signature) {
     const session = event.data.object;
     const paymentId = session.metadata?.paymentId;
     if (paymentId) {
-      const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
-      if (payment && payment.status === 'PENDING') {
-        await prisma.$transaction(async (tx) => {
-          await tx.payment.update({
-            where: { id: paymentId },
-            data: {
-              status: 'COMPLETED',
-              paidAt: new Date(),
-              stripePaymentIntentId: session.payment_intent ?? null,
-            },
-          });
-
-          if (payment.planId) {
-            const plan = await tx.membershipPlan.findUnique({
-              where: { id: payment.planId },
-            });
-            if (plan) {
-              const start = new Date();
-              const end = new Date(start);
-              end.setDate(end.getDate() + plan.durationDays);
-              await tx.member.update({
-                where: { id: payment.memberId },
-                data: {
-                  membershipPlanId: plan.id,
-                  membershipStart: start,
-                  membershipEnd: end,
-                },
-              });
-            }
-          }
-        });
-      }
+      await fulfillPaymentRecord(paymentId, {
+        stripePaymentIntentId:
+          typeof session.payment_intent === 'string' ? session.payment_intent : null,
+      });
     }
   }
 
@@ -239,15 +445,24 @@ export async function createManualPayment(dto) {
     if (!plan) throw new AppError('Plan not found', 404, 'NOT_FOUND');
   }
 
-  return prisma.payment.create({
+  const payment = await prisma.payment.create({
     data: {
       memberId: dto.memberId,
       planId,
       amount: dto.amount,
       currency: dto.currency ?? 'usd',
-      status: dto.status,
-      paidAt: dto.status === 'COMPLETED' ? new Date() : null,
+      status: dto.status === 'COMPLETED' ? 'PENDING' : dto.status,
+      paidAt: null,
     },
+  });
+
+  if (dto.status === 'COMPLETED') {
+    const { payment: fulfilled } = await fulfillPaymentRecord(payment.id);
+    return fulfilled;
+  }
+
+  return prisma.payment.findUnique({
+    where: { id: payment.id },
     include: paymentInclude,
   });
 }

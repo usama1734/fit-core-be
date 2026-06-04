@@ -48,6 +48,10 @@ export async function checkIn(dto, actor) {
 
   const member = await assertMemberAccess(memberId, actor);
 
+  if (member.paymentStatus !== 'PAID') {
+    throw new AppError('Membership payment required before check-in', 403, 'PAYMENT_REQUIRED');
+  }
+
   if (!isMembershipActive(member)) {
     throw new AppError('Membership expired', 403, 'MEMBERSHIP_EXPIRED');
   }

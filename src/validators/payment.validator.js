@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 export const createCheckoutSchema = z.object({
   planId: z.string().min(1),
-  memberId: z.string().optional(),
+});
+
+export const confirmCheckoutSchema = z.object({
+  sessionId: z.string().min(1),
 });
 
 export const updatePaymentSchema = z.object({

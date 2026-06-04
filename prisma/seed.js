@@ -107,6 +107,7 @@ async function main() {
         membershipPlan: { connect: { id: plan.id } },
         membershipStart: start,
         membershipEnd: end,
+        paymentStatus: 'PAID',
         qrToken: `FC-SEED-MEMBER-${i}-${Date.now()}`,
         user: {
           create: {

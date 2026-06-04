@@ -6,30 +6,33 @@ import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import {
   createCheckoutSchema,
+  confirmCheckoutSchema,
   updatePaymentSchema,
   createManualPaymentSchema,
 } from '../validators/payment.validator.js';
 
 const router = Router();
 
-router.get(
-  '/',
-  authenticate,
-  requireRole(ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER),
-  asyncHandler(paymentController.list),
-);
-router.get(
-  '/:id',
-  authenticate,
-  requireRole(ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER),
-  asyncHandler(paymentController.getById),
-);
+// Specific paths before /:id to avoid route shadowing
 router.post(
   '/checkout',
   authenticate,
-  requireRole(ROLES.ADMIN, ROLES.MEMBER),
+  requireRole(ROLES.MEMBER),
   validate(createCheckoutSchema),
   asyncHandler(paymentController.checkout),
+);
+router.post(
+  '/confirm',
+  authenticate,
+  requireRole(ROLES.MEMBER),
+  validate(confirmCheckoutSchema),
+  asyncHandler(paymentController.confirm),
+);
+router.post(
+  '/sync',
+  authenticate,
+  requireRole(ROLES.MEMBER),
+  asyncHandler(paymentController.sync),
 );
 router.post(
   '/manual',
@@ -37,6 +40,19 @@ router.post(
   requireRole(ROLES.ADMIN),
   validate(createManualPaymentSchema),
   asyncHandler(paymentController.createManual),
+);
+
+router.get(
+  '/',
+  authenticate,
+  requireRole(ROLES.ADMIN, ROLES.MEMBER),
+  asyncHandler(paymentController.list),
+);
+router.get(
+  '/:id',
+  authenticate,
+  requireRole(ROLES.ADMIN, ROLES.MEMBER),
+  asyncHandler(paymentController.getById),
 );
 router.patch(
   '/:id',

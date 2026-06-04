@@ -25,6 +25,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum MemberPaymentStatus {
+  UNPAID
+  PAID
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -65,6 +70,7 @@ model Member {
   qrToken          String?         @unique
   membershipStart  DateTime?
   membershipEnd    DateTime?
+  paymentStatus    MemberPaymentStatus @default(UNPAID)
   attendances      Attendance[]
   payments         Payment[]
   createdAt        DateTime        @default(now())

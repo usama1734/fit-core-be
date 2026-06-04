@@ -182,6 +182,7 @@ export async function assignPlan(memberId, membershipPlanId, membershipStart) {
       membershipPlanId,
       membershipStart: start,
       membershipEnd: end,
+      paymentStatus: 'PAID',
     },
     include: memberInclude,
   });
