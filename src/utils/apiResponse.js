@@ -1,10 +1,13 @@
-export function successResponse(data, message = null, meta = {}) {
-  return {
+export function successResponse(data, message = null, meta) {
+  const body = {
     success: true,
     data,
     ...(message && { message }),
-    ...(Object.keys(meta).length > 0 && { meta }),
   };
+  if (meta != null) {
+    body.meta = meta;
+  }
+  return body;
 }
 
 export function errorResponse(code, message, details = {}) {

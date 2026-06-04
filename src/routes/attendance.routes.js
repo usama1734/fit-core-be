@@ -9,10 +9,18 @@ import {
   checkOutSchema,
   updateAttendanceSchema,
 } from '../validators/attendance.validator.js';
+import { paginationQuerySchema } from '../validators/pagination.validator.js';
 
 const router = Router();
 
 router.use(authenticate);
+
+router.get('/gym-qr', requireRole(ROLES.ADMIN), asyncHandler(attendanceController.getGymQr));
+router.post(
+  '/gym-qr/regenerate',
+  requireRole(ROLES.ADMIN),
+  asyncHandler(attendanceController.regenerateGymQr),
+);
 
 router.post(
   '/check-in',
@@ -29,6 +37,7 @@ router.post(
 router.get(
   '/',
   requireRole(ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER),
+  validate(paginationQuerySchema, 'query'),
   asyncHandler(attendanceController.list),
 );
 router.get(

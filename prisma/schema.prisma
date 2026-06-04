@@ -110,6 +110,12 @@ model Attendance {
   @@index([checkInAt])
 }
 
+model GymCheckInConfig {
+  id        String   @id @default("default")
+  token     String   @unique
+  updatedAt DateTime @updatedAt
+}
+
 model Payment {
   id                    String         @id @default(cuid())
   memberId              String

@@ -9,8 +9,8 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
-  const members = await memberService.listMembers(req.user);
-  res.json(successResponse(members));
+  const { items, meta } = await memberService.listMembers(req.user, req.query);
+  res.json(successResponse(items, null, meta));
 }
 
 export async function getById(req, res) {

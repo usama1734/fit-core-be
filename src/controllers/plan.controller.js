@@ -8,8 +8,8 @@ export async function create(req, res) {
 
 export async function list(req, res) {
   const includeInactive = req.user?.role === 'ADMIN';
-  const plans = await planService.listPlans(includeInactive);
-  res.json(successResponse(plans));
+  const { items, meta } = await planService.listPlans(includeInactive, req.query);
+  res.json(successResponse(items, null, meta));
 }
 
 export async function getById(req, res) {

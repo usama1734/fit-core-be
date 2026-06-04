@@ -17,12 +17,6 @@ export const env = {
   STRIPE_SECRET_KEY: envString(process.env.STRIPE_SECRET_KEY, ''),
   STRIPE_WEBHOOK_SECRET: envString(process.env.STRIPE_WEBHOOK_SECRET, ''),
   FRONTEND_URL,
-  STRIPE_SUCCESS_URL: envString(
-    process.env.STRIPE_SUCCESS_URL,
-    `${FRONTEND_URL}/payment/success`,
-  ),
-  STRIPE_CANCEL_URL: envString(
-    process.env.STRIPE_CANCEL_URL,
-    `${FRONTEND_URL}/payment/cancel`,
-  ),
+  STRIPE_SUCCESS_URL: envString(process.env.STRIPE_SUCCESS_URL, `${FRONTEND_URL}/payment/success`),
+  STRIPE_CANCEL_URL: envString(process.env.STRIPE_CANCEL_URL, `${FRONTEND_URL}/payment/cancel`),
 };

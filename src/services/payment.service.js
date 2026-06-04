@@ -2,11 +2,10 @@ import Stripe from 'stripe';
 import { prisma } from '../config/prisma.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
+import { paginatedFindMany } from '../utils/pagination.js';
 import { memberInclude } from '../utils/userSelect.js';
 
-const stripe = env.STRIPE_SECRET_KEY
-  ? new Stripe(env.STRIPE_SECRET_KEY)
-  : null;
+const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null;
 
 const paymentInclude = {
   member: { include: memberInclude },
@@ -40,7 +39,10 @@ function resolveCheckoutUrls() {
       : '?session_id={CHECKOUT_SESSION_ID}';
   }
 
-  if (!isValidHttpUrl(cancelUrl) || !isValidHttpUrl(successUrl.replace('{CHECKOUT_SESSION_ID}', 'test'))) {
+  if (
+    !isValidHttpUrl(cancelUrl) ||
+    !isValidHttpUrl(successUrl.replace('{CHECKOUT_SESSION_ID}', 'test'))
+  ) {
     throw new AppError(
       'Stripe redirect URLs are invalid. Set FRONTEND_URL or STRIPE_SUCCESS_URL / STRIPE_CANCEL_URL in backend .env (e.g. http://localhost:5173/payment/success).',
       503,
@@ -97,9 +99,7 @@ async function syncPendingPaymentWithStripe(payment) {
 
   const ageMs = Date.now() - new Date(payment.createdAt).getTime();
   const isStaleOpen =
-    session.status === 'open' &&
-    session.payment_status !== 'paid' &&
-    ageMs > 60 * 60 * 1000;
+    session.status === 'open' && session.payment_status !== 'paid' && ageMs > 60 * 60 * 1000;
 
   if (isStaleOpen) {
     return prisma.payment.update({
@@ -123,7 +123,7 @@ export async function syncMemberPendingPayments(memberId) {
   }
 }
 
-export async function listPayments(actor) {
+export async function listPayments(actor, query = {}) {
   const where = {};
   if (actor.role === 'MEMBER') {
     where.memberId = actor.memberId;
@@ -132,11 +132,17 @@ export async function listPayments(actor) {
     throw new AppError('Forbidden', 403, 'FORBIDDEN');
   }
 
-  return prisma.payment.findMany({
-    where,
-    include: paymentInclude,
-    orderBy: { createdAt: 'desc' },
-  });
+  return paginatedFindMany(
+    (args) =>
+      prisma.payment.findMany({
+        ...args,
+        include: paymentInclude,
+        orderBy: { createdAt: 'desc' },
+      }),
+    (args) => prisma.payment.count(args),
+    { where },
+    query,
+  );
 }
 
 export async function getPaymentById(id, actor) {
@@ -412,11 +418,7 @@ export async function handleStripeWebhook(rawBody, signature) {
 
   let event;
   try {
-    event = stripeClient.webhooks.constructEvent(
-      rawBody,
-      signature,
-      env.STRIPE_WEBHOOK_SECRET,
-    );
+    event = stripeClient.webhooks.constructEvent(rawBody, signature, env.STRIPE_WEBHOOK_SECRET);
   } catch {
     throw new AppError('Invalid webhook signature', 400, 'INVALID_SIGNATURE');
   }
@@ -475,7 +477,11 @@ export async function updatePayment(id, dto) {
     where: { id },
     data: {
       status: dto.status,
-      paidAt: dto.paidAt ? new Date(dto.paidAt) : dto.status === 'COMPLETED' ? new Date() : undefined,
+      paidAt: dto.paidAt
+        ? new Date(dto.paidAt)
+        : dto.status === 'COMPLETED'
+          ? new Date()
+          : undefined,
     },
     include: paymentInclude,
   });

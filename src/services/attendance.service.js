@@ -1,6 +1,8 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/AppError.js';
+import { paginatedFindMany } from '../utils/pagination.js';
 import { memberInclude } from '../utils/userSelect.js';
+import { assertValidVenueToken } from './gymCheckIn.service.js';
 
 const attendanceInclude = {
   member: { include: memberInclude },
@@ -36,6 +38,13 @@ function isMembershipActive(member) {
 }
 
 export async function checkIn(dto, actor) {
+  if (dto.venueToken) {
+    if (actor.role !== 'MEMBER') {
+      throw new AppError('Gym QR check-in is for members only', 403, 'FORBIDDEN');
+    }
+    await assertValidVenueToken(dto.venueToken);
+  }
+
   let memberId = resolveMemberId(dto, actor);
 
   if (dto.qrToken && actor.role !== 'MEMBER') {
@@ -63,7 +72,7 @@ export async function checkIn(dto, actor) {
     throw new AppError('Member already checked in', 409, 'ALREADY_CHECKED_IN');
   }
 
-  const method = dto.method ?? (dto.qrToken ? 'QR' : 'MANUAL');
+  const method = dto.method ?? (dto.venueToken || dto.qrToken ? 'QR' : 'MANUAL');
 
   return prisma.attendance.create({
     data: {
@@ -118,11 +127,17 @@ export async function listAttendance(actor, query = {}) {
     where.member = { trainerId: actor.trainerId };
   }
 
-  return prisma.attendance.findMany({
-    where,
-    include: attendanceInclude,
-    orderBy: { checkInAt: 'desc' },
-  });
+  return paginatedFindMany(
+    (args) =>
+      prisma.attendance.findMany({
+        ...args,
+        include: attendanceInclude,
+        orderBy: { checkInAt: 'desc' },
+      }),
+    (args) => prisma.attendance.count(args),
+    { where },
+    query,
+  );
 }
 
 export async function getAttendanceById(id, actor) {
@@ -150,9 +165,12 @@ export async function updateAttendance(id, dto) {
     where: { id },
     data: {
       checkInAt: dto.checkInAt ? new Date(dto.checkInAt) : undefined,
-      checkOutAt: dto.checkOutAt !== undefined
-        ? (dto.checkOutAt ? new Date(dto.checkOutAt) : null)
-        : undefined,
+      checkOutAt:
+        dto.checkOutAt !== undefined
+          ? dto.checkOutAt
+            ? new Date(dto.checkOutAt)
+            : null
+          : undefined,
       method: dto.method,
       notes: dto.notes,
     },

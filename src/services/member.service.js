@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword } from '../utils/password.js';
+import { paginatedFindMany } from '../utils/pagination.js';
 import { memberInclude } from '../utils/userSelect.js';
 
 async function generateQrToken(memberId) {
@@ -84,17 +85,19 @@ export async function createMember(dto, actor = null) {
   return { ...updated, qrCodeDataUrl };
 }
 
-export async function listMembers(actor) {
+export async function listMembers(actor, query = {}) {
   const where = {};
   if (actor.role === 'TRAINER') {
     where.trainerId = actor.trainerId;
   }
 
-  return prisma.member.findMany({
-    where,
-    include: memberInclude,
-    orderBy: { createdAt: 'desc' },
-  });
+  return paginatedFindMany(
+    (args) =>
+      prisma.member.findMany({ ...args, include: memberInclude, orderBy: { createdAt: 'desc' } }),
+    (args) => prisma.member.count(args),
+    { where },
+    query,
+  );
 }
 
 export async function getMemberById(id, actor) {
@@ -140,9 +143,12 @@ export async function updateMember(id, dto, actor) {
     where: { id },
     data: {
       phone: dto.phone,
-      dateOfBirth: dto.dateOfBirth !== undefined
-        ? (dto.dateOfBirth ? new Date(dto.dateOfBirth) : null)
-        : undefined,
+      dateOfBirth:
+        dto.dateOfBirth !== undefined
+          ? dto.dateOfBirth
+            ? new Date(dto.dateOfBirth)
+            : null
+          : undefined,
       ...(Object.keys(userData).length && { user: { update: userData } }),
     },
     include: memberInclude,

@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/AppError.js';
+import { paginatedFindMany } from '../utils/pagination.js';
 
 export async function createPlan(dto) {
   return prisma.membershipPlan.create({
@@ -14,11 +15,14 @@ export async function createPlan(dto) {
   });
 }
 
-export async function listPlans(includeInactive = false) {
-  return prisma.membershipPlan.findMany({
-    where: includeInactive ? {} : { isActive: true },
-    orderBy: { price: 'asc' },
-  });
+export async function listPlans(includeInactive = false, query = {}) {
+  const where = includeInactive ? {} : { isActive: true };
+  return paginatedFindMany(
+    (args) => prisma.membershipPlan.findMany({ ...args, orderBy: { price: 'asc' } }),
+    (args) => prisma.membershipPlan.count(args),
+    { where },
+    query,
+  );
 }
 
 export async function getPlanById(id) {

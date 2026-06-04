@@ -10,6 +10,7 @@ import {
   assignTrainerSchema,
   assignPlanSchema,
 } from '../validators/member.validator.js';
+import { paginationQuerySchema } from '../validators/pagination.validator.js';
 
 const router = Router();
 
@@ -23,9 +24,23 @@ router.post(
   validate(createMemberSchema),
   asyncHandler(memberController.create),
 );
-router.get('/', requireRole(ROLES.ADMIN, ROLES.TRAINER), asyncHandler(memberController.list));
-router.get('/:id', requireRole(ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER), asyncHandler(memberController.getById));
-router.patch('/:id', requireRole(ROLES.ADMIN), validate(updateMemberSchema), asyncHandler(memberController.update));
+router.get(
+  '/',
+  requireRole(ROLES.ADMIN, ROLES.TRAINER),
+  validate(paginationQuerySchema, 'query'),
+  asyncHandler(memberController.list),
+);
+router.get(
+  '/:id',
+  requireRole(ROLES.ADMIN, ROLES.TRAINER, ROLES.MEMBER),
+  asyncHandler(memberController.getById),
+);
+router.patch(
+  '/:id',
+  requireRole(ROLES.ADMIN),
+  validate(updateMemberSchema),
+  asyncHandler(memberController.update),
+);
 router.patch(
   '/:id/assign-trainer',
   requireRole(ROLES.ADMIN),

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
@@ -155,6 +156,12 @@ async function main() {
       },
     });
   }
+
+  await prisma.gymCheckInConfig.upsert({
+    where: { id: 'default' },
+    create: { id: 'default', token: `FC-GYM-${randomUUID()}` },
+    update: {},
+  });
 
   console.log('Seed complete.');
   console.log('Admin: admin@gmail.com / Admin@123');

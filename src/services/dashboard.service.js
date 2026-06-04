@@ -1,12 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/AppError.js';
 
-function parseRange(query) {
-  const from = query.from ? new Date(query.from) : startOfDay(new Date());
-  const to = query.to ? new Date(query.to) : endOfDay(new Date());
-  return { from, to };
-}
-
 function startOfDay(d) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -19,21 +13,33 @@ function endOfDay(d) {
   return x;
 }
 
+function parseRange(query = {}) {
+  const days = Math.min(90, Math.max(7, Number.parseInt(query.days, 10) || 14));
+  const to = query.to ? endOfDay(new Date(query.to)) : endOfDay(new Date());
+  const from = query.from
+    ? startOfDay(new Date(query.from))
+    : startOfDay(new Date(to.getTime() - (days - 1) * 86400000));
+  return { from, to, days };
+}
+
 export async function getAdminDashboard(query = {}) {
-  const { from, to } = parseRange(query);
+  const { from, to, days } = parseRange(query);
   const now = new Date();
   const inSevenDays = new Date(now);
   inSevenDays.setDate(inSevenDays.getDate() + 7);
 
   const [
+    totalMembers,
     activeMembers,
     activeTrainers,
     checkInsToday,
-    revenueAgg,
     expiringMemberships,
+    expiredMembers,
+    unpaidMembers,
+    revenueAgg,
     recentPayments,
-    attendanceByDay,
   ] = await Promise.all([
+    prisma.member.count(),
     prisma.member.count({
       where: {
         user: { isActive: true },
@@ -44,68 +50,42 @@ export async function getAdminDashboard(query = {}) {
     prisma.attendance.count({
       where: { checkInAt: { gte: startOfDay(now), lte: endOfDay(now) } },
     }),
-    prisma.payment.aggregate({
-      where: {
-        status: 'COMPLETED',
-        paidAt: { gte: from, lte: to },
-      },
-      _sum: { amount: true },
+    prisma.member.count({
+      where: { membershipEnd: { gte: now, lte: inSevenDays } },
     }),
     prisma.member.count({
-      where: {
-        membershipEnd: { gte: now, lte: inSevenDays },
-      },
+      where: { membershipEnd: { lt: now } },
+    }),
+    prisma.member.count({ where: { paymentStatus: 'UNPAID' } }),
+    prisma.payment.aggregate({
+      where: { status: 'COMPLETED', paidAt: { gte: from, lte: to } },
+      _sum: { amount: true },
     }),
     prisma.payment.findMany({
       where: { status: 'COMPLETED' },
-      take: 5,
+      take: 8,
       orderBy: { paidAt: 'desc' },
       include: {
         member: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
         membershipPlan: { select: { name: true } },
       },
     }),
-    prisma.attendance.findMany({
-      where: { checkInAt: { gte: from, lte: to } },
-      select: { checkInAt: true },
-    }),
   ]);
-
-  const series = buildAttendanceSeries(from, to, attendanceByDay);
 
   return {
     kpis: {
+      totalMembers,
       activeMembers,
       activeTrainers,
       checkInsToday,
       revenueInRange: Number(revenueAgg._sum.amount ?? 0),
       expiringMemberships,
+      expiredMembers,
+      unpaidMembers,
     },
     recentPayments,
-    series,
-    meta: { from: from.toISOString(), to: to.toISOString() },
+    meta: { from: from.toISOString(), to: to.toISOString(), days },
   };
-}
-
-function buildAttendanceSeries(from, to, rows) {
-  const labels = [];
-  const values = [];
-  const map = new Map();
-
-  for (const row of rows) {
-    const day = new Date(row.checkInAt).toISOString().slice(0, 10);
-    map.set(day, (map.get(day) ?? 0) + 1);
-  }
-
-  const cursor = new Date(from);
-  while (cursor <= to) {
-    const key = cursor.toISOString().slice(0, 10);
-    labels.push(key);
-    values.push(map.get(key) ?? 0);
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  return { labels, values };
 }
 
 export async function getTrainerDashboard(actor, query = {}) {

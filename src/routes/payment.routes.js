@@ -10,6 +10,7 @@ import {
   updatePaymentSchema,
   createManualPaymentSchema,
 } from '../validators/payment.validator.js';
+import { paginationQuerySchema } from '../validators/pagination.validator.js';
 
 const router = Router();
 
@@ -32,6 +33,7 @@ router.post(
   '/sync',
   authenticate,
   requireRole(ROLES.MEMBER),
+  validate(paginationQuerySchema, 'query'),
   asyncHandler(paymentController.sync),
 );
 router.post(
@@ -46,6 +48,7 @@ router.get(
   '/',
   authenticate,
   requireRole(ROLES.ADMIN, ROLES.MEMBER),
+  validate(paginationQuerySchema, 'query'),
   asyncHandler(paymentController.list),
 );
 router.get(

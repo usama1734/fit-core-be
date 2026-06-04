@@ -4,8 +4,8 @@ import { successResponse } from '../utils/apiResponse.js';
 import { auditLog } from '../middleware/auditLogger.middleware.js';
 
 export async function list(req, res) {
-  const payments = await paymentService.listPayments(req.user);
-  res.json(successResponse(payments));
+  const { items, meta } = await paymentService.listPayments(req.user, req.query);
+  res.json(successResponse(items, null, meta));
 }
 
 export async function sync(req, res) {
@@ -13,8 +13,8 @@ export async function sync(req, res) {
     throw new AppError('Only members can sync payments', 403, 'FORBIDDEN');
   }
   await paymentService.syncMemberPendingPayments(req.user.memberId);
-  const payments = await paymentService.listPayments(req.user);
-  res.json(successResponse(payments, 'Payments synced with Stripe'));
+  const { items, meta } = await paymentService.listPayments(req.user, req.query);
+  res.json(successResponse(items, 'Payments synced with Stripe', meta));
 }
 
 export async function getById(req, res) {
@@ -33,10 +33,7 @@ export async function checkout(req, res) {
 }
 
 export async function confirm(req, res) {
-  const result = await paymentService.confirmCheckoutSession(
-    req.body.sessionId,
-    req.user,
-  );
+  const result = await paymentService.confirmCheckoutSession(req.body.sessionId, req.user);
   auditLog({
     action: 'PAYMENT_CONFIRMED',
     actorId: req.user.id,

@@ -9,8 +9,8 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
-  const trainers = await trainerService.listTrainers();
-  res.json(successResponse(trainers));
+  const { items, meta } = await trainerService.listTrainers(req.query);
+  res.json(successResponse(items, null, meta));
 }
 
 export async function getById(req, res) {
@@ -29,11 +29,19 @@ export async function remove(req, res) {
 }
 
 export async function assignedMembers(req, res) {
-  const members = await trainerService.getAssignedMembers(req.params.id, req.user);
-  res.json(successResponse(members));
+  const { items, meta } = await trainerService.getAssignedMembers(
+    req.params.id,
+    req.user,
+    req.query,
+  );
+  res.json(successResponse(items, null, meta));
 }
 
 export async function myMembers(req, res) {
-  const members = await trainerService.getAssignedMembers(req.user.trainerId, req.user);
-  res.json(successResponse(members));
+  const { items, meta } = await trainerService.getAssignedMembers(
+    req.user.trainerId,
+    req.user,
+    req.query,
+  );
+  res.json(successResponse(items, null, meta));
 }
