@@ -1,5 +1,5 @@
-import * as planService from '../services/plan.service.js';
-import { successResponse } from '../utils/apiResponse.js';
+import * as planService from '#services/plan.service.js';
+import { successResponse } from '#utils/apiResponse.js';
 
 export async function create(req, res) {
   const plan = await planService.createPlan(req.body);

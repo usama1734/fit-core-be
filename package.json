@@ -17,6 +17,15 @@
   "prisma": {
     "seed": "node prisma/seed.js"
   },
+  "imports": {
+    "#utils/*": "./src/utils/*",
+    "#config/*": "./src/config/*",
+    "#services/*": "./src/services/*",
+    "#controllers/*": "./src/controllers/*",
+    "#middleware/*": "./src/middleware/*",
+    "#validators/*": "./src/validators/*",
+    "#routes/*": "./src/routes/*"
+  },
   "engines": {
     "node": ">=20"
   },

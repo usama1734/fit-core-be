@@ -7,8 +7,8 @@ import attendanceRoutes from './attendance.routes.js';
 import gymCheckInRoutes from './gymCheckIn.routes.js';
 import paymentRoutes from './payment.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
-import * as paymentController from '../controllers/payment.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import * as paymentController from '#controllers/payment.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
 
 export const apiRouter = Router();
 

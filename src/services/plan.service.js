@@ -1,6 +1,6 @@
-import { prisma } from '../config/prisma.js';
-import { AppError } from '../utils/AppError.js';
-import { paginatedFindMany } from '../utils/pagination.js';
+import { prisma } from '#config/prisma.js';
+import { AppError } from '#utils/AppError.js';
+import { paginatedFindMany } from '#utils/pagination.js';
 
 export async function createPlan(dto) {
   return prisma.membershipPlan.create({

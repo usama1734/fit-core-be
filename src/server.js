@@ -1,6 +1,6 @@
 import app from './app.js';
-import { env } from './config/env.js';
-import { getConfig } from './services/gymCheckIn.service.js';
+import { env } from '#config/env.js';
+import { getConfig } from '#services/gymCheckIn.service.js';
 
 const { PORT } = env;
 

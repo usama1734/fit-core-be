@@ -1,8 +1,8 @@
-import * as attendanceService from '../services/attendance.service.js';
-import * as gymCheckInService from '../services/gymCheckIn.service.js';
-import { AppError } from '../utils/AppError.js';
-import { successResponse } from '../utils/apiResponse.js';
-import { auditLog } from '../middleware/auditLogger.middleware.js';
+import * as attendanceService from '#services/attendance.service.js';
+import * as gymCheckInService from '#services/gymCheckIn.service.js';
+import { AppError } from '#utils/AppError.js';
+import { successResponse } from '#utils/apiResponse.js';
+import { auditLog } from '#middleware/auditLogger.middleware.js';
 
 const CHECKIN_FAILURE_CODES = new Set([
   'INVALID_VENUE_QR',

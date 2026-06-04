@@ -1,8 +1,8 @@
-import { prisma } from '../config/prisma.js';
-import { AppError } from '../utils/AppError.js';
-import { hashPassword } from '../utils/password.js';
-import { paginatedFindMany } from '../utils/pagination.js';
-import { trainerInclude, publicUserSelect, memberInclude } from '../utils/userSelect.js';
+import { prisma } from '#config/prisma.js';
+import { AppError } from '#utils/AppError.js';
+import { hashPassword } from '#utils/password.js';
+import { paginatedFindMany } from '#utils/pagination.js';
+import { trainerInclude, publicUserSelect, memberInclude } from '#utils/userSelect.js';
 
 export async function createTrainer(dto) {
   const existing = await prisma.user.findUnique({

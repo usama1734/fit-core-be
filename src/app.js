@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import { env } from './config/env.js';
-import { requestLogger } from './middleware/requestLogger.middleware.js';
-import { auditLoggerMiddleware } from './middleware/auditLogger.middleware.js';
-import { errorHandler } from './middleware/errorHandler.middleware.js';
-import { apiRouter } from './routes/index.js';
-import * as paymentController from './controllers/payment.controller.js';
-import { asyncHandler } from './utils/asyncHandler.js';
+import { env } from '#config/env.js';
+import { requestLogger } from '#middleware/requestLogger.middleware.js';
+import { auditLoggerMiddleware } from '#middleware/auditLogger.middleware.js';
+import { errorHandler } from '#middleware/errorHandler.middleware.js';
+import { apiRouter } from '#routes/index.js';
+import * as paymentController from '#controllers/payment.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
 
 const app = express();
 

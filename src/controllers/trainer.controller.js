@@ -1,6 +1,6 @@
-import * as trainerService from '../services/trainer.service.js';
-import { successResponse } from '../utils/apiResponse.js';
-import { auditLog } from '../middleware/auditLogger.middleware.js';
+import * as trainerService from '#services/trainer.service.js';
+import { successResponse } from '#utils/apiResponse.js';
+import { auditLog } from '#middleware/auditLogger.middleware.js';
 
 export async function create(req, res) {
   const trainer = await trainerService.createTrainer(req.body);

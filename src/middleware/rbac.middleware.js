@@ -1,4 +1,4 @@
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '#utils/AppError.js';
 import { auditLog } from './auditLogger.middleware.js';
 
 export const ROLES = {

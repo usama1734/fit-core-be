@@ -1,4 +1,4 @@
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '#utils/AppError.js';
 
 export function validate(schema, source = 'body') {
   return (req, _res, next) => {

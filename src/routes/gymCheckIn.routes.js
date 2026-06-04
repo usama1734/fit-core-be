@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import * as attendanceController from '../controllers/attendance.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
+import * as attendanceController from '#controllers/attendance.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
 
 const router = Router();
 

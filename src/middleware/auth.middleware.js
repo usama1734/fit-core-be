@@ -1,5 +1,5 @@
-import { verifyToken } from '../utils/jwt.js';
-import { AppError } from '../utils/AppError.js';
+import { verifyToken } from '#utils/jwt.js';
+import { AppError } from '#utils/AppError.js';
 
 export function authenticate(req, _res, next) {
   const header = req.headers.authorization;

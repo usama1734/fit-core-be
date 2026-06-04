@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import * as trainerController from '../controllers/trainer.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
-import { createTrainerSchema, updateTrainerSchema } from '../validators/trainer.validator.js';
-import { paginationQuerySchema } from '../validators/pagination.validator.js';
+import * as trainerController from '#controllers/trainer.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
+import { validate } from '#middleware/validate.middleware.js';
+import { createTrainerSchema, updateTrainerSchema } from '#validators/trainer.validator.js';
+import { paginationQuerySchema } from '#validators/pagination.validator.js';
 
 const router = Router();
 

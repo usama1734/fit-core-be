@@ -1,5 +1,5 @@
-import * as dashboardService from '../services/dashboard.service.js';
-import { successResponse } from '../utils/apiResponse.js';
+import * as dashboardService from '#services/dashboard.service.js';
+import { successResponse } from '#utils/apiResponse.js';
 
 export async function admin(req, res) {
   const data = await dashboardService.getAdminDashboard(req.query);

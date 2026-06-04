@@ -1,7 +1,7 @@
-import { prisma } from '../config/prisma.js';
-import { AppError } from '../utils/AppError.js';
-import { paginatedFindMany } from '../utils/pagination.js';
-import { memberInclude } from '../utils/userSelect.js';
+import { prisma } from '#config/prisma.js';
+import { AppError } from '#utils/AppError.js';
+import { paginatedFindMany } from '#utils/pagination.js';
+import { memberInclude } from '#utils/userSelect.js';
 import { assertValidVenueToken } from './gymCheckIn.service.js';
 
 const attendanceInclude = {

@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 import QRCode from 'qrcode';
-import { prisma } from '../config/prisma.js';
-import { env } from '../config/env.js';
-import { AppError } from '../utils/AppError.js';
+import { prisma } from '#config/prisma.js';
+import { env } from '#config/env.js';
+import { AppError } from '#utils/AppError.js';
 
 const CONFIG_ID = 'default';
 

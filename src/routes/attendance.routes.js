@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import * as attendanceController from '../controllers/attendance.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
+import * as attendanceController from '#controllers/attendance.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
+import { validate } from '#middleware/validate.middleware.js';
 import {
   checkInSchema,
   checkOutSchema,
   updateAttendanceSchema,
-} from '../validators/attendance.validator.js';
-import { paginationQuerySchema } from '../validators/pagination.validator.js';
-import { AppError } from '../utils/AppError.js';
+} from '#validators/attendance.validator.js';
+import { paginationQuerySchema } from '#validators/pagination.validator.js';
+import { AppError } from '#utils/AppError.js';
 
 const router = Router();
 

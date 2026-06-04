@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import * as memberController from '../controllers/member.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
+import * as memberController from '#controllers/member.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
+import { validate } from '#middleware/validate.middleware.js';
 import {
   createMemberSchema,
   updateMemberSchema,
   assignTrainerSchema,
   assignPlanSchema,
-} from '../validators/member.validator.js';
-import { paginationQuerySchema } from '../validators/pagination.validator.js';
+} from '#validators/member.validator.js';
+import { paginationQuerySchema } from '#validators/pagination.validator.js';
 
 const router = Router();
 

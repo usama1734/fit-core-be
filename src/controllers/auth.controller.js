@@ -1,6 +1,6 @@
-import * as authService from '../services/auth.service.js';
-import { successResponse } from '../utils/apiResponse.js';
-import { auditLog } from '../middleware/auditLogger.middleware.js';
+import * as authService from '#services/auth.service.js';
+import { successResponse } from '#utils/apiResponse.js';
+import { auditLog } from '#middleware/auditLogger.middleware.js';
 
 export async function login(req, res, next) {
   try {

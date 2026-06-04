@@ -1,8 +1,8 @@
-import { prisma } from '../config/prisma.js';
-import { AppError } from '../utils/AppError.js';
-import { comparePassword } from '../utils/password.js';
-import { signToken } from '../utils/jwt.js';
-import { publicUserSelect } from '../utils/userSelect.js';
+import { prisma } from '#config/prisma.js';
+import { AppError } from '#utils/AppError.js';
+import { comparePassword } from '#utils/password.js';
+import { signToken } from '#utils/jwt.js';
+import { publicUserSelect } from '#utils/userSelect.js';
 
 async function buildAuthPayload(userId) {
   const user = await prisma.user.findUnique({

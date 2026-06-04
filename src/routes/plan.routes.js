@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import * as planController from '../controllers/plan.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
-import { createPlanSchema, updatePlanSchema } from '../validators/plan.validator.js';
-import { paginationQuerySchema } from '../validators/pagination.validator.js';
+import * as planController from '#controllers/plan.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
+import { validate } from '#middleware/validate.middleware.js';
+import { createPlanSchema, updatePlanSchema } from '#validators/plan.validator.js';
+import { paginationQuerySchema } from '#validators/pagination.validator.js';
 
 const router = Router();
 

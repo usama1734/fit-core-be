@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import * as dashboardController from '../controllers/dashboard.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
-import { dashboardQuerySchema } from '../validators/dashboard.validator.js';
+import * as dashboardController from '#controllers/dashboard.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
+import { validate } from '#middleware/validate.middleware.js';
+import { dashboardQuerySchema } from '#validators/dashboard.validator.js';
 
 const router = Router();
 

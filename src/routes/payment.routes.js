@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import * as paymentController from '../controllers/payment.controller.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { authenticate } from '../middleware/auth.middleware.js';
-import { requireRole, ROLES } from '../middleware/rbac.middleware.js';
-import { validate } from '../middleware/validate.middleware.js';
+import * as paymentController from '#controllers/payment.controller.js';
+import { asyncHandler } from '#utils/asyncHandler.js';
+import { authenticate } from '#middleware/auth.middleware.js';
+import { requireRole, ROLES } from '#middleware/rbac.middleware.js';
+import { validate } from '#middleware/validate.middleware.js';
 import {
   createCheckoutSchema,
   confirmCheckoutSchema,
   updatePaymentSchema,
   createManualPaymentSchema,
-} from '../validators/payment.validator.js';
-import { paginationQuerySchema } from '../validators/pagination.validator.js';
+} from '#validators/payment.validator.js';
+import { paginationQuerySchema } from '#validators/pagination.validator.js';
 
 const router = Router();
 

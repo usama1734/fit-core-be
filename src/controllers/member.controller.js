@@ -1,6 +1,6 @@
-import * as memberService from '../services/member.service.js';
-import { successResponse } from '../utils/apiResponse.js';
-import { auditLog } from '../middleware/auditLogger.middleware.js';
+import * as memberService from '#services/member.service.js';
+import { successResponse } from '#utils/apiResponse.js';
+import { auditLog } from '#middleware/auditLogger.middleware.js';
 
 export async function create(req, res) {
   const member = await memberService.createMember(req.body, req.user);

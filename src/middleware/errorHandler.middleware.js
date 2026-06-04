@@ -1,5 +1,5 @@
-import { errorResponse } from '../utils/apiResponse.js';
-import { AppError } from '../utils/AppError.js';
+import { errorResponse } from '#utils/apiResponse.js';
+import { AppError } from '#utils/AppError.js';
 
 export function errorHandler(err, _req, res, _next) {
   if (err instanceof AppError) {

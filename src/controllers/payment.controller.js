@@ -1,7 +1,7 @@
-import * as paymentService from '../services/payment.service.js';
-import { AppError } from '../utils/AppError.js';
-import { successResponse } from '../utils/apiResponse.js';
-import { auditLog } from '../middleware/auditLogger.middleware.js';
+import * as paymentService from '#services/payment.service.js';
+import { AppError } from '#utils/AppError.js';
+import { successResponse } from '#utils/apiResponse.js';
+import { auditLog } from '#middleware/auditLogger.middleware.js';
 
 export async function list(req, res) {
   const { items, meta } = await paymentService.listPayments(req.user, req.query);
